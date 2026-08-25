@@ -9,7 +9,7 @@ from .randomizer import PuzzleRandomizer
 from worlds.AutoWorld import World, WebWorld
 
 file_version = 1
-world_version = "0.1.16"
+world_version = "0.1.19"
 
 class SimonTathamPuzzlesWeb(WebWorld):
     option_groups = sgtpuzzles_option_groups
@@ -41,7 +41,7 @@ class SimonTathamPuzzlesWorld(World):
     }
 
     def generate_early(self):
-        self.world_seed = self.multiworld.random.getrandbits(32)
+        self.world_seed = self.random.getrandbits(32)
 
         # Generate list of puzzles
         puzzle_count = self.options.puzzle_count.value
@@ -50,7 +50,7 @@ class SimonTathamPuzzlesWorld(World):
         default_genre_weight = self.options.genre_weights.get("all", 0)
 
         randomizer_options = {
-            "random": self.multiworld.random,
+            "random": self.random,
             "builtin_presets": genrePresets,
             "preset_overrides": self.options.preset_overrides.value,
             "min_difficulty": min(self.options.min_difficulty.value, self.options.max_difficulty.value),
@@ -84,7 +84,7 @@ class SimonTathamPuzzlesWorld(World):
 
         self.puzzles = puzzles_overall.evaluate()
 
-        # genres = self.multiworld.random.choices(list(genre_weights.keys()), (genre_weights.values()), k=puzzle_count)
+        # genres = self.random.choices(list(genre_weights.keys()), (genre_weights.values()), k=puzzle_count)
 
         # for i in range(puzzle_count):
         #     if genres[i] in self.options.preset_overrides:
@@ -92,7 +92,7 @@ class SimonTathamPuzzlesWorld(World):
         #     else:
         #         presets = genrePresets[genres[i]]
 
-        #     preset = self.multiworld.random.choice(presets)
+        #     preset = self.random.choice(presets)
 
         #     new_puzzle = f"{genres[i]}:{preset}"
         #     self.puzzles.append(new_puzzle)
@@ -133,7 +133,7 @@ class SimonTathamPuzzlesWorld(World):
         # Choose more starting items and remove them
         starting_item_count = min(self.options.starting_puzzles.value, len(itempool))
 
-        extra_starting_items = self.multiworld.random.sample(itempool, starting_item_count)
+        extra_starting_items = self.random.sample(itempool, starting_item_count)
 
         for item in extra_starting_items:
             itempool.remove(item)
