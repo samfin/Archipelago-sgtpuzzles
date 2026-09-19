@@ -24,7 +24,7 @@ class SgtKeenWorld(World):
     each one making a new set of digits ("Digit Group") logically
     deducible without any guessing.
     """
-    game = "sgtkeen"
+    game = "Progressive Keen"
     options: SgtKeenOptions
     options_dataclass = SgtKeenOptions
     web = SgtKeenWeb()

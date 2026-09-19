@@ -9,7 +9,7 @@ class AdvData(typing.NamedTuple):
 
 
 class SgtKeenLocation(Location):
-    game: str = "sgtkeen"
+    game: str = "Progressive Keen"
 
 
 base_id = 9250000

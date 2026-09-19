@@ -20,7 +20,7 @@ class ItemData(typing.NamedTuple):
 
 
 class SgtKeenItem(Item):
-    game: str = "sgtkeen"
+    game: str = "Progressive Keen"
 
 
 # One progressive item per puzzle slot. Receiving the Nth copy of
