@@ -31,6 +31,17 @@ item_table = {
     for i in range(max_puzzles)
 }
 
-item_table["Filler"] = ItemData(base_id + max_puzzles, False)
+# One unlock item per puzzle slot. A puzzle beyond the world's
+# starting_puzzles count isn't accessible at all -- none of its Digit Group
+# locations can be checked -- until its own "Puzzle {i+1}" item is received,
+# in addition to the usual Clue Set count for whichever Digit Group is being
+# checked (see rules.py). Puzzles within the starting count never need this
+# item; it's simply never created for them (see __init__.py's create_items()).
+item_table.update({
+    f"Puzzle {i+1}": ItemData(base_id + max_puzzles + i)
+    for i in range(max_puzzles)
+})
+
+item_table["Filler"] = ItemData(base_id + 2 * max_puzzles, False)
 
 lookup_id_to_name: typing.Dict[int, str] = {data.code: item_name for item_name, data in item_table.items()}

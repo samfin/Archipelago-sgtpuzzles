@@ -24,4 +24,16 @@ advancement_table = {
     for j in range(max_groups_per_puzzle)
 }
 
+# "Puzzle {i+1} Solved" for i in [0, max_puzzles). Checking this location means
+# the puzzle has been fully solved (every Digit Group's cells correctly filled
+# in) -- it exists purely to give this world extra location capacity, one per
+# puzzle, to back the "Puzzle N" unlock items (see items.py/rules.py): those
+# are new required items with no Digit Group location of their own behind
+# them, since unlocking a puzzle is a precondition for its Digit Groups, not
+# an achievement within them.
+advancement_table.update({
+    f"Puzzle {i+1} Solved": AdvData(base_id + max_puzzles * max_groups_per_puzzle + i)
+    for i in range(max_puzzles)
+})
+
 lookup_id_to_name: typing.Dict[int, str] = {data.id: location_name for location_name, data in advancement_table.items()}

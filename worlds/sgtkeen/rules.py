@@ -5,14 +5,45 @@ from .items import max_puzzles
 
 # Sets rules on locations that are always applied.
 # digit_group_counts[i] is the number of Digit Group stages puzzle i actually has.
-def set_rules(multiworld: MultiWorld, player: int, puzzles: list[str], digit_group_counts: list[int]):
+# starting_puzzle_count is how many puzzles (by index, 0-based) are accessible from
+# the start -- puzzles beyond that also need their own "Puzzle {i+1}" item before
+# any of their Digit Group locations become reachable at all.
+def set_rules(multiworld: MultiWorld, player: int, puzzles: list[str], digit_group_counts: list[int],
+              starting_puzzle_count: int):
     for i in range(len(puzzles)):
-        item_name = f"Puzzle {i+1} Clue Set"
+        clue_set_name = f"Puzzle {i+1} Clue Set"
+        unlock_name = f"Puzzle {i+1}"
+        needs_unlock_item = i >= starting_puzzle_count
+
         for j in range(1, digit_group_counts[i] + 1):
             location_name = f"Puzzle {i+1} Digit Group {j}"
+            if needs_unlock_item:
+                set_rule(
+                    multiworld.get_location(location_name, player),
+                    lambda state, clue_set_name=clue_set_name, unlock_name=unlock_name, j=j:
+                        state.has(unlock_name, player) and state.count(clue_set_name, player) >= j)
+            else:
+                set_rule(
+                    multiworld.get_location(location_name, player),
+                    lambda state, clue_set_name=clue_set_name, j=j: state.count(clue_set_name, player) >= j)
+
+        # "Puzzle {i+1} Solved" location: same requirement as the puzzle's own
+        # final Digit Group (i.e. available exactly once the puzzle is fully
+        # solved). Exists purely to give this world extra location capacity to
+        # back the "Puzzle N" unlock items (see items.py) -- it isn't itself
+        # part of the Digit Group progression.
+        solved_location_name = f"Puzzle {i+1} Solved"
+        final_count = digit_group_counts[i]
+        if needs_unlock_item:
             set_rule(
-                multiworld.get_location(location_name, player),
-                lambda state, item_name=item_name, j=j: state.count(item_name, player) >= j)
+                multiworld.get_location(solved_location_name, player),
+                lambda state, clue_set_name=clue_set_name, unlock_name=unlock_name, final_count=final_count:
+                    state.has(unlock_name, player) and state.count(clue_set_name, player) >= final_count)
+        else:
+            set_rule(
+                multiworld.get_location(solved_location_name, player),
+                lambda state, clue_set_name=clue_set_name, final_count=final_count:
+                    state.count(clue_set_name, player) >= final_count)
 
 
 # A puzzle counts as fully solved once its final Digit Group's requirement is met,

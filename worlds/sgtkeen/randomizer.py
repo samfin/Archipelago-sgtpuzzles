@@ -26,19 +26,32 @@ def _usable_presets(
 
 def _resolve_preset(random: Random, spec: str, usable: tuple[list[str], list[float]]) -> str:
     """
-    A spec containing ":" or "#" is already a full puzzle string
-    (params:id / params#seed) and is used as-is. A bare spec (e.g. "keen" or
-    "") is resolved by weighted random choice from the usable pool.
-    """
-    if ":" in spec or "#" in spec:
-        return spec
+    Any non-empty spec -- a bare parameter string ("9dx"), an ID
+    ("9dx:c494"), or a seed ("9dx#12345") -- is already a complete puzzle
+    string on its own (the client-side puzzle engine can generate a fresh
+    puzzle from bare params alone) and is used as-is. Only the empty spec
+    ("") is a request to fill the slot by weighted random choice from the
+    usable pool -- this is how generate_puzzle_list() fills the puzzles
+    beyond the caller's fixed_puzzles list.
 
-    entries, weights = usable
-    if len(entries) == 0:
-        raise ValueError("No valid Keen presets to randomize from -- check "
-                          "min_difficulty/max_difficulty, min_size/max_size, "
-                          "and preset_overrides.")
-    return random.choices(entries, k=1, weights=weights)[0]
+    Note: this does NOT accept a "<genre>:<params>" style spec (e.g.
+    "keen:9dx") -- that was the full-puzzle-string convention from this
+    world's earlier multi-genre days. Since the world became Keen-only,
+    generate_early() unconditionally adds the "keen:" genre prefix to every
+    entry generate_puzzle_list() returns (fixed or random), so a
+    fixed_puzzles entry should be given WITHOUT that prefix -- "9dx", not
+    "keen:9dx" -- or it will end up double-prefixed ("keen:keen:9dx") and
+    fail to parse.
+    """
+    if spec == "":
+        entries, weights = usable
+        if len(entries) == 0:
+            raise ValueError("No valid Keen presets to randomize from -- check "
+                              "min_difficulty/max_difficulty, min_size/max_size, "
+                              "and preset_overrides.")
+        return random.choices(entries, k=1, weights=weights)[0]
+
+    return spec
 
 
 def generate_puzzle_list(

@@ -55,15 +55,20 @@ class DigitGroupCount(Range):
     default = 10
 
 
-class StartingClueSets(Range):
+class StartingPuzzles(Range):
     """
-    Number of "Clue Set" copies to grant as starting inventory for each
-    puzzle (removed from the item pool). Capped at digit_group_count - 1
-    per puzzle so at least one Digit Group location remains behind an item.
+    Number of puzzles that are accessible from the start. Each one starts
+    with exactly 1 "Clue Set" item already granted (removed from the item
+    pool). Every other puzzle is entirely inaccessible -- none of its Digit
+    Group locations can be checked -- until its own "Puzzle N" item is
+    received, and it starts with 0 Clue Sets of its own: both the "Puzzle N"
+    item and at least one "Puzzle N Clue Set" are required before any
+    progress can be made on it. Capped at puzzle_count.
     """
-    range_start = 0
-    range_end = max_groups_per_puzzle - 1
-    default = 0
+    display_name = "Starting Puzzles"
+    range_start = 1
+    range_end = max_puzzles
+    default = 1
 
 
 class CompletionPercentage(Range):
@@ -157,7 +162,7 @@ sgtkeen_option_groups = [
     OptionGroup("Puzzle Options", [
         PuzzleCount,
         DigitGroupCount,
-        StartingClueSets,
+        StartingPuzzles,
         CompletionPercentage,
         MinimumDifficulty,
         MaximumDifficulty,
@@ -173,7 +178,7 @@ sgtkeen_option_groups = [
 class SgtKeenOptions(PerGameCommonOptions):
     puzzle_count: PuzzleCount
     digit_group_count: DigitGroupCount
-    starting_clue_sets: StartingClueSets
+    starting_puzzles: StartingPuzzles
     completion_percentage: CompletionPercentage
     min_difficulty: MinimumDifficulty
     max_difficulty: MaximumDifficulty
