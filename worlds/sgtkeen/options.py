@@ -35,7 +35,7 @@ max_supported_size = max(p[3] for p in genrePresets["keen"])
 class PuzzleCount(Range):
     """
     Number of independent Keen puzzles to generate. Each one runs its own
-    Clue Set / Digit Group progression chain.
+    Clue / Digit Group progression chain.
     """
     range_start = 1
     range_end = max_puzzles
@@ -44,7 +44,7 @@ class PuzzleCount(Range):
 
 class DigitGroupCount(Range):
     """
-    Number of progression stages per puzzle: how many "Clue Set" items it
+    Number of progression stages per puzzle: how many "Clue" items it
     takes to reveal every clue, and how many "Digit Group" locations it's
     worth. The puzzle's clues are grouped and ordered (client-side) to
     produce as close to this many logically-forced stages as possible.
@@ -58,11 +58,11 @@ class DigitGroupCount(Range):
 class StartingPuzzles(Range):
     """
     Number of puzzles that are accessible from the start. Each one starts
-    with exactly 1 "Clue Set" item already granted (removed from the item
+    with exactly 1 "Clue" item already granted (removed from the item
     pool). Every other puzzle is entirely inaccessible -- none of its Digit
     Group locations can be checked -- until its own "Puzzle N" item is
-    received, and it starts with 0 Clue Sets of its own: both the "Puzzle N"
-    item and at least one "Puzzle N Clue Set" are required before any
+    received, and it starts with 0 Clues of its own: both the "Puzzle N"
+    item and at least one "Puzzle N Clue" are required before any
     progress can be made on it. Capped at puzzle_count.
     """
     display_name = "Starting Puzzles"

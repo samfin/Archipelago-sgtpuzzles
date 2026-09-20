@@ -11,7 +11,7 @@ from .items import max_puzzles
 def set_rules(multiworld: MultiWorld, player: int, puzzles: list[str], digit_group_counts: list[int],
               starting_puzzle_count: int):
     for i in range(len(puzzles)):
-        clue_set_name = f"Puzzle {i+1} Clue Set"
+        clue_set_name = f"Puzzle {i+1} Clue"
         unlock_name = f"Puzzle {i+1}"
         needs_unlock_item = i >= starting_puzzle_count
 
@@ -54,7 +54,7 @@ def set_completion_rules(multiworld: MultiWorld, player: int, puzzles: list[str]
     def solved_puzzle_count(state) -> int:
         count = 0
         for i in range(len(puzzles)):
-            if state.count(f"Puzzle {i+1} Clue Set", player) >= digit_group_counts[i]:
+            if state.count(f"Puzzle {i+1} Clue", player) >= digit_group_counts[i]:
                 count += 1
         return count
 

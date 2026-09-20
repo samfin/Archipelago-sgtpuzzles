@@ -20,7 +20,7 @@ class SgtKeenWorld(World):
     A Keen (KenKen-style) puzzle from Simon Tatham's Portable Puzzle
     Collection, played through a progressive reveal: a puzzle's clues are
     grouped into an ordered chain. Only the first clue group is visible at
-    first; obtaining "Clue Set" items reveals later groups one at a time,
+    first; obtaining "Clue" items reveals later groups one at a time,
     each one making a new set of digits ("Digit Group") logically
     deducible without any guessing.
     """
@@ -38,7 +38,7 @@ class SgtKeenWorld(World):
     location_name_to_id = {name: data.id for name, data in advancement_table.items()}
 
     item_name_groups = {
-        "Clue Set": {f"Puzzle {i+1} Clue Set" for i in range(max_puzzles)},
+        "Clue": {f"Puzzle {i+1} Clue" for i in range(max_puzzles)},
         "Puzzle Unlock": {f"Puzzle {i+1}" for i in range(max_puzzles)}
     }
 
@@ -125,7 +125,7 @@ class SgtKeenWorld(World):
         itempool: list[str] = []
 
         for i in range(len(self.puzzles)):
-            clue_set_name = f"Puzzle {i+1} Clue Set"
+            clue_set_name = f"Puzzle {i+1} Clue"
             itempool += [clue_set_name] * self.digit_group_counts[i]
 
             # Every puzzle beyond the starting count needs its own unlock item
@@ -142,17 +142,17 @@ class SgtKeenWorld(World):
             if item.name in itempool:
                 itempool.remove(item.name)
             else:
-                logging.warning(f"Couldn't remove {item.name} from Clue Set itempool. It's probably useless.")
+                logging.warning(f"Couldn't remove {item.name} from Clue itempool. It's probably useless.")
 
         # Every puzzle -- not just the starting_puzzle_count that are
-        # accessible immediately -- is granted exactly 1 Clue Set as starting
+        # accessible immediately -- is granted exactly 1 Clue as starting
         # inventory (precollected, so it's part of the initial state rather
         # than something that has to be found in the pool). For a starting
         # puzzle this is what makes it playable from the very first location
         # check. For a puzzle beyond the starting count, it's what makes
         # receiving that puzzle's own "Puzzle N" item alone enough to unlock
         # its first Digit Group -- previously that also needed a *separate*
-        # found "Puzzle N Clue Set" item, effectively gating every non-
+        # found "Puzzle N Clue" item, effectively gating every non-
         # starting puzzle behind two independently-placed progression items
         # before its own locations opened up at all. That double gating was
         # unnecessarily deep (it also directly contributed to "not enough
@@ -168,7 +168,7 @@ class SgtKeenWorld(World):
         granted_starting_items = 0
 
         for i in range(len(self.puzzles)):
-            clue_set_name = f"Puzzle {i+1} Clue Set"
+            clue_set_name = f"Puzzle {i+1} Clue"
             if clue_set_name in itempool:
                 itempool.remove(clue_set_name)
                 self.multiworld.push_precollected(self.create_item(clue_set_name))
