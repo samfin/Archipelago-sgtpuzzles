@@ -9,8 +9,10 @@ base_id = 9250000
 max_puzzles = 200
 
 # Maximum number of progression stages (Clue copies / Digit Group
-# locations) any single puzzle can have. Actual per-world target is set by
-# the digit_group_count option.
+# locations) any single puzzle can have. Actual per-puzzle target comes
+# from that puzzle's own type string (the optional trailing Digit Group
+# count in e.g. "9dx20" -- see randomizer.parse_puzzle_type()), clamped to
+# this value.
 max_groups_per_puzzle = 50
 
 
@@ -43,5 +45,30 @@ item_table.update({
 })
 
 item_table["Filler"] = ItemData(base_id + 2 * max_puzzles, False)
+
+# Purely cosmetic re-flavorings of the plain "Filler" item above -- same
+# ItemClassification.filler behavior (no progression, no logic depends on
+# which of these a player receives), just a different display name/flavor
+# text. create_filler() (in __init__.py) picks "Filler" itself 75% of the
+# time and one of these, uniformly at random, the other 25% -- see its own
+# comment for the exact odds. Each still needs its own unique item code
+# since Archipelago items are keyed by (name, code) pair, even though none
+# of these differ functionally from "Filler" or from each other.
+filler_flavor_names = [
+    "Cluster 67",
+    "Cluster 69",
+    "Cluster 42",
+    "Cluster 3.14",
+    "Progressive Key",
+    "Dive",
+    "Ledge Grab",
+    "Triple Jump",
+    "Wall Kick",
+    "Kick",
+]
+item_table.update({
+    name: ItemData(base_id + 2 * max_puzzles + 1 + i, False)
+    for i, name in enumerate(filler_flavor_names)
+})
 
 lookup_id_to_name: typing.Dict[int, str] = {data.code: item_name for item_name, data in item_table.items()}

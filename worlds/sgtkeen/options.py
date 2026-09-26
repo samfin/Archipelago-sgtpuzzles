@@ -3,33 +3,43 @@ from Options import Choice, OptionGroup, Range, \
 from dataclasses import dataclass
 from .items import max_puzzles, max_groups_per_puzzle
 
-# Keen-only preset pool: (parameter string, weight, coarse difficulty tier,
-# grid size). Coarse difficulty tiers: 0 = Easy, 1 = Normal, 2 = Hard,
-# 3 = Extreme. "Unreasonable" ('u') presets are deliberately excluded: that
-# tier requires recursive guessing in the base solver, which is incompatible
-# with a puzzle whose whole point is that every stage is reachable by pure
-# deduction.
+# Keen-only preset pool: (parameter string, weight, coarse difficulty tier).
+# Coarse difficulty tiers: 0 = Easy, 1 = Normal, 2 = Hard, 3 = Extreme.
+# "Unreasonable" ('u') presets are deliberately excluded: that tier requires
+# recursive guessing in the base solver, which is incompatible with a puzzle
+# whose whole point is that every stage is reachable by pure deduction.
+#
+# The parameter string is exactly what a "puzzle type" is -- grid size,
+# difficulty, an optional trailing "m" (multiplication-only), and now an
+# optional trailing digit-group count, e.g. "9dx20" (9x9, Extreme, 20
+# Digit Groups). That count is this world's own concept: randomizer.py
+# splits it back off before the string is ever handed to the client-side
+# puzzle engine, which only understands the part before it. A type with no
+# count embedded (an older-style bare "6de", or a hand-written override/
+# fixed-puzzle entry) falls back to randomizer.default_digit_group_count.
+#
+# There used to be a separate grid-size field here, filtered by the
+# Minimum/Maximum Puzzle Size options -- both the field and those options
+# are gone now that picking sizes means picking which puzzle types are in
+# the pool (built-in or via Preset Overrides) rather than filtering a
+# range. Smaller grids are given proportionally fewer Digit Groups below:
+# a 4x4 or 5x5 puzzle has far fewer cages than a 9x9 one, so the same
+# path length doesn't fit both.
 genrePresets = {
     "keen": [
-        ("4de", 1, 0, 4),
-        ("5de", 1, 0, 5),
-        ("5dem", 1, 0, 5),
-        ("6de", 1, 0, 6),
-        ("6dn", 1, 1, 6),
-        ("6dnm", 1, 1, 6),
-        ("9dn", 1, 1, 9),
-        ("6dh", 1, 2, 6),
-        ("9dh", 1, 2, 9),
-        ("6dx", 1, 3, 6),
-        ("9dx", 1, 3, 9),
+        ("4de5", 1, 0),
+        ("5de7", 1, 0),
+        ("5dem7", 1, 0),
+        ("6de10", 1, 0),
+        ("6dn10", 1, 1),
+        ("6dnm10", 1, 1),
+        ("9dn18", 1, 1),
+        ("6dh10", 1, 2),
+        ("9dh18", 1, 2),
+        ("6dx10", 1, 3),
+        ("9dx18", 1, 3),
     ]
 }
-
-# Grid sizes actually present in the pool above, used to bound the Minimum/
-# Maximum Puzzle Size options below. Bumping these automatically follows if
-# the pool ever gains a new size.
-min_supported_size = min(p[3] for p in genrePresets["keen"])
-max_supported_size = max(p[3] for p in genrePresets["keen"])
 
 
 class PuzzleCount(Range):
@@ -40,19 +50,6 @@ class PuzzleCount(Range):
     range_start = 1
     range_end = max_puzzles
     default = 1
-
-
-class DigitGroupCount(Range):
-    """
-    Number of progression stages per puzzle: how many "Clue" items it
-    takes to reveal every clue, and how many "Digit Group" locations it's
-    worth. The puzzle's clues are grouped and ordered (client-side) to
-    produce as close to this many logically-forced stages as possible.
-    """
-    display_name = "Digit Groups Per Puzzle"
-    range_start = 1
-    range_end = max_groups_per_puzzle
-    default = 10
 
 
 class StartingPuzzles(Range):
@@ -69,6 +66,24 @@ class StartingPuzzles(Range):
     range_start = 1
     range_end = max_puzzles
     default = 1
+
+
+class StartingClueBonus(Range):
+    """
+    Extra "Clue" items to grant, on top of the 1 every puzzle already
+    starts with, for each puzzle that's accessible from the start (see
+    Starting Puzzles). Puzzles unlocked later via their own "Puzzle N"
+    item are unaffected -- they always start with exactly 1 Clue,
+    regardless of this setting.
+
+    Automatically capped per puzzle so it can never grant more Clues than
+    that puzzle actually has (its own Digit Group count -- see Preset
+    Overrides/Fixed Puzzles for how that's set per puzzle type).
+    """
+    display_name = "Starting Clue Bonus"
+    range_start = 0
+    range_end = max_groups_per_puzzle - 1
+    default = 0
 
 
 class CompletionPercentage(Range):
@@ -112,36 +127,20 @@ class MaximumDifficulty(Choice):
     option_extreme = 3
 
 
-class MinimumSize(Range):
-    """
-    Minimum grid size (width/height) to select generated puzzles from, e.g.
-    6 for 6x6.
-    """
-    display_name = "Minimum Puzzle Size"
-    range_start = min_supported_size
-    range_end = max_supported_size
-    default = min_supported_size
-
-
-class MaximumSize(Range):
-    """
-    Maximum grid size (width/height) to select generated puzzles from.
-    Takes priority over Minimum Puzzle Size if it is lower.
-    """
-    display_name = "Maximum Puzzle Size"
-    range_start = min_supported_size
-    range_end = max_supported_size
-    default = max_supported_size
-
-
 class PresetOverrides(OptionList):
     """
-    List of Keen presets to randomize from, replacing the built-in pool.
+    List of Keen puzzle types to randomize from, replacing the built-in
+    pool (see Minimum/Maximum Difficulty for filtering the built-in pool
+    instead, without replacing it).
 
-    Presets are parameter strings like 6de (6x6, Easy) or 9dh (9x9, Hard).
-    The letter after the size is the difficulty (e = Easy, n = Normal,
-    h = Hard, x = Extreme); an optional trailing "m" restricts clues to
-    multiplication only. "Unreasonable" ('u') presets are not supported.
+    Each entry is a puzzle type string: <size>d<difficulty>[m][<clues>],
+    e.g. 6de (6x6, Easy), 9dh (9x9, Hard), or 9dx20 (9x9, Extreme, with
+    20 Digit Groups). The letter after the size is the difficulty
+    (e = Easy, n = Normal, h = Hard, x = Extreme); an optional "m" right
+    after that restricts clues to multiplication only; an optional
+    number after THAT sets how many Digit Groups (progression stages /
+    "Clue" copies) the puzzle is worth -- if omitted, it defaults to 10.
+    "Unreasonable" ('u') presets are not supported.
     """
     default = []
 
@@ -152,8 +151,9 @@ class FixedPuzzles(OptionList):
     the start of the list. The remaining list (up to puzzle_count) will be
     filled from the preset pool.
 
-    You can specify by parameter string (6de), seed (6de#12345), or
-    ID (6de:c494).
+    You can specify by puzzle type (6de or 9dx20 -- see Preset Overrides
+    for the full type-string grammar, including the optional Digit Group
+    count), seed (6de#12345, 9dx20#12345), or ID (6de:c494, 9dx20:c494).
     """
     default = []
 
@@ -161,13 +161,11 @@ class FixedPuzzles(OptionList):
 sgtkeen_option_groups = [
     OptionGroup("Puzzle Options", [
         PuzzleCount,
-        DigitGroupCount,
         StartingPuzzles,
+        StartingClueBonus,
         CompletionPercentage,
         MinimumDifficulty,
         MaximumDifficulty,
-        MinimumSize,
-        MaximumSize,
         PresetOverrides,
         FixedPuzzles
     ])
@@ -177,13 +175,11 @@ sgtkeen_option_groups = [
 @dataclass
 class SgtKeenOptions(PerGameCommonOptions):
     puzzle_count: PuzzleCount
-    digit_group_count: DigitGroupCount
     starting_puzzles: StartingPuzzles
+    starting_clue_bonus: StartingClueBonus
     completion_percentage: CompletionPercentage
     min_difficulty: MinimumDifficulty
     max_difficulty: MaximumDifficulty
-    min_size: MinimumSize
-    max_size: MaximumSize
     preset_overrides: PresetOverrides
     fixed_puzzles: FixedPuzzles
 
