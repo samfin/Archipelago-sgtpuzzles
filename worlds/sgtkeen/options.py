@@ -1,7 +1,7 @@
 from Options import Choice, OptionGroup, Range, \
     StartInventoryPool, PerGameCommonOptions, OptionList
 from dataclasses import dataclass
-from .items import max_puzzles, max_groups_per_puzzle
+from .items import max_puzzles, max_groups_per_puzzle, max_bonus_checks_per_digit_group
 
 # Keen-only preset pool: (parameter string, weight, coarse difficulty tier).
 # Coarse difficulty tiers: 0 = Easy, 1 = Normal, 2 = Hard, 3 = Extreme.
@@ -100,6 +100,27 @@ class CompletionPercentage(Range):
     default = 100
 
 
+class BonusChecksPerDigitGroup(Range):
+    """
+    Extra locations to award for each Digit Group, on top of the one it
+    already has, all released together the moment that Digit Group is
+    solved (same requirement as today -- this never asks for any extra
+    player action, it just adds more locations to that one milestone).
+
+    0 (the default) keeps this world's original behavior exactly: one
+    location per Digit Group, named "Puzzle N Digit Group J". Any value
+    above 0 renames EVERY Digit Group's locations to the numbered form
+    "Puzzle N Digit Group J-1", "Puzzle N Digit Group J-2", and so on,
+    with (this value + 1) total locations per Digit Group -- e.g. a
+    value of 2 makes each Digit Group release "...J-1", "...J-2", and
+    "...J-3" together.
+    """
+    display_name = "Bonus Checks Per Digit Group"
+    range_start = 0
+    range_end = max_bonus_checks_per_digit_group
+    default = 0
+
+
 class MinimumDifficulty(Choice):
     """
     Minimum difficulty to select generated puzzles from.
@@ -164,6 +185,7 @@ sgtkeen_option_groups = [
         StartingPuzzles,
         StartingClueBonus,
         CompletionPercentage,
+        BonusChecksPerDigitGroup,
         MinimumDifficulty,
         MaximumDifficulty,
         PresetOverrides,
@@ -178,6 +200,7 @@ class SgtKeenOptions(PerGameCommonOptions):
     starting_puzzles: StartingPuzzles
     starting_clue_bonus: StartingClueBonus
     completion_percentage: CompletionPercentage
+    bonus_checks_per_digit_group: BonusChecksPerDigitGroup
     min_difficulty: MinimumDifficulty
     max_difficulty: MaximumDifficulty
     preset_overrides: PresetOverrides

@@ -6,7 +6,7 @@ base_id = 9250000
 # Maximum number of independent Keen puzzles a world can have active at once.
 # This only sizes the item/location ID space; actual count is set by the
 # puzzle_count option.
-max_puzzles = 200
+max_puzzles = 50
 
 # Maximum number of progression stages (Clue copies / Digit Group
 # locations) any single puzzle can have. Actual per-puzzle target comes
@@ -14,6 +14,15 @@ max_puzzles = 200
 # count in e.g. "9dx20" -- see randomizer.parse_puzzle_type()), clamped to
 # this value.
 max_groups_per_puzzle = 50
+
+# Maximum value of the bonus_checks_per_digit_group option (see
+# options.py): how many EXTRA locations a single Digit Group can be
+# split into on top of its own one, when that option is positive. Only
+# sizes the reserved location ID space for the numbered
+# "Digit Group J-1".."Digit Group J-(V+1)" naming scheme (see
+# locations.py's digit_group_location_names()); actual per-world value
+# is set by the option itself.
+max_bonus_checks_per_digit_group = 19
 
 
 class ItemData(typing.NamedTuple):

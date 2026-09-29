@@ -1,15 +1,15 @@
 import logging
 from math import ceil
 from BaseClasses import Item, Region, Entrance, ItemClassification
-from .items import SgtKeenItem, item_table, max_puzzles, max_groups_per_puzzle, filler_flavor_names
-from .locations import SgtKeenLocation, advancement_table
+from .items import SgtKeenItem, item_table, max_puzzles, max_groups_per_puzzle, max_bonus_checks_per_digit_group, filler_flavor_names
+from .locations import SgtKeenLocation, advancement_table, digit_group_location_names
 from .options import SgtKeenOptions, genrePresets, sgtkeen_option_groups
 from .rules import set_rules, set_completion_rules
 from .randomizer import generate_puzzle_list
 from worlds.AutoWorld import World, WebWorld
 
 file_version = 1
-world_version = "0.2.0"
+world_version = "0.3.0"
 
 class SgtKeenWeb(WebWorld):
     option_groups = sgtkeen_option_groups
@@ -31,6 +31,7 @@ class SgtKeenWorld(World):
     puzzles: list[str]
     digit_group_counts: list[int]
     starting_puzzle_count: int
+    bonus_checks_per_digit_group: int
     solve_target: int
     world_seed: int
 
@@ -48,10 +49,27 @@ class SgtKeenWorld(World):
     }
 
     location_name_groups = {
+        # Every "Digit Group" location name this world can ever create --
+        # both the unnumbered form (bonus_checks_per_digit_group == 0) and
+        # every numbered "-1".."-(max_bonus_checks_per_digit_group + 1)"
+        # variant (bonus_checks_per_digit_group > 0) -- so a player can
+        # hint/plando/reference "the Digit Group locations" as one group
+        # regardless of which naming scheme this seed's options ended up
+        # using. Built from the same digit_group_location_names() helper
+        # that create_regions() uses -- at bonus_checks_per_digit_group == 0
+        # AND at the worst case (max bonus checks) -- rather than
+        # duplicating its naming rule here. Calling the helper with only
+        # the max value would miss the unnumbered form entirely (it
+        # returns only the numbered names once its bonus_checks argument is
+        # positive), so both ends of the range are unioned in explicitly;
+        # every value in between produces a subset of the max case's
+        # numbered names, so nothing between 0 and the max is missed.
         "Digit Group": {
-            f"Puzzle {i+1} Digit Group {j+1}"
+            name
             for i in range(max_puzzles)
             for j in range(max_groups_per_puzzle)
+            for bonus in (0, max_bonus_checks_per_digit_group)
+            for name in digit_group_location_names(i + 1, j + 1, bonus)
         },
         "Solved": {f"Puzzle {i+1} Solved" for i in range(max_puzzles)}
     }
@@ -98,6 +116,8 @@ class SgtKeenWorld(World):
         # Digit Group locations become accessible (see rules.py/create_items()).
         self.starting_puzzle_count = min(self.options.starting_puzzles.value, len(self.puzzles))
 
+        self.bonus_checks_per_digit_group = self.options.bonus_checks_per_digit_group.value
+
         self.solve_target = ceil(len(self.puzzles) * (self.options.completion_percentage / 100))
 
     def create_regions(self):
@@ -106,10 +126,14 @@ class SgtKeenWorld(World):
 
         for i in range(len(self.puzzles)):
             for j in range(self.digit_group_counts[i]):
-                loc_name = f"Puzzle {i+1} Digit Group {j+1}"
-                loc_data = advancement_table[loc_name]
-                new_location = SgtKeenLocation(self.player, loc_name, loc_data.id, region)
-                region.locations.append(new_location)
+                # bonus_checks_per_digit_group == 0 (the default) returns
+                # just the one unnumbered name, so this loop creates exactly
+                # the same single location per group as before in that case
+                # -- see locations.py/digit_group_location_names().
+                for loc_name in digit_group_location_names(i + 1, j + 1, self.bonus_checks_per_digit_group):
+                    loc_data = advancement_table[loc_name]
+                    new_location = SgtKeenLocation(self.player, loc_name, loc_data.id, region)
+                    region.locations.append(new_location)
 
             # One "Puzzle {i+1} Solved" location per puzzle (every puzzle, not
             # just ones needing an unlock item) -- see locations.py/rules.py.
@@ -229,14 +253,20 @@ class SgtKeenWorld(World):
         # deterministic-size convention used everywhere else in this method,
         # rather than relying on the generic multiworld fill step to pad an
         # undersized pool on its own.
-        total_locations = sum(self.digit_group_counts) + len(self.puzzles)
+        # Each Digit Group now backs (self.bonus_checks_per_digit_group + 1)
+        # locations instead of always exactly 1 -- see create_regions() and
+        # locations.py/digit_group_location_names() -- so the pool's target
+        # size has to scale by the same factor to still match this world's
+        # actual total location count.
+        checks_per_group = self.bonus_checks_per_digit_group + 1
+        total_locations = sum(self.digit_group_counts) * checks_per_group + len(self.puzzles)
         current_pool_size = len(itempool) + granted_starting_items
         shortfall = total_locations - current_pool_size
         if shortfall > 0:
             self.multiworld.itempool += [self.create_filler() for _ in range(shortfall)]
 
     def set_rules(self):
-        set_rules(self.multiworld, self.player, self.puzzles, self.digit_group_counts, self.starting_puzzle_count)
+        set_rules(self.multiworld, self.player, self.puzzles, self.digit_group_counts, self.bonus_checks_per_digit_group, self.starting_puzzle_count)
         set_completion_rules(self.multiworld, self.player, self.puzzles, self.digit_group_counts, self.solve_target)
 
     def fill_slot_data(self):
@@ -251,6 +281,7 @@ class SgtKeenWorld(World):
             "puzzles": self.puzzles,
             "digit_group_counts": self.digit_group_counts,
             "starting_puzzle_count": self.starting_puzzle_count,
+            "bonus_checks_per_digit_group": self.bonus_checks_per_digit_group,
             "solve_target": self.solve_target
         }
 
